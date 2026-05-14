@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mini Juegos Educativos</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+        background:linear-gradient(135deg,#1d2671,#c33764);
+        min-height:100vh;
+        color:white;
+        padding:20px;
+    }
+
+    h1{
+        text-align:center;
+        margin-bottom:20px;
+    }
+
+    .menu{
+        display:flex;
+        gap:15px;
+        justify-content:center;
+        flex-wrap:wrap;
+        margin-bottom:30px;
+    }
+
+    .menu button{
+        padding:12px 20px;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        font-size:16px;
+        background:white;
+        color:#333;
+        transition:0.3s;
+        font-weight:bold;
+    }
+
+    .menu button:hover{
+        transform:scale(1.05);
+        background:#ffd166;
+    }
+
+    .game{
+        display:none;
+        background:rgba(255,255,255,0.12);
+        padding:25px;
+        border-radius:20px;
+        max-width:700px;
+        margin:auto;
+        backdrop-filter:blur(8px);
+    }
+
+    .active{
+        display:block;
+    }
+
+    .question{
+        font-size:24px;
+        margin-bottom:20px;
+    }
+
+    .answers button{
+        display:block;
+        width:100%;
+        margin:10px 0;
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        font-size:16px;
+        transition:0.3s;
+    }
+
+    .answers button:hover{
+        opacity:0.8;
+    }
+
+    .correct{
+        background:#06d6a0 !important;
+        color:white;
+    }
+
+    .wrong{
+        background:#ef476f !important;
+        color:white;
+    }
+
+    input{
+        padding:10px;
+        width:100%;
+        border:none;
+        border-radius:10px;
+        margin:15px 0;
+        font-size:16px;
+    }
+
+    .score{
+        margin-top:20px;
+        font-size:20px;
+        font-weight:bold;
+    }
+
+    .memory-grid{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:10px;
+        margin-top:20px;
+    }
+
+    .card{
+        height:80px;
+        background:white;
+        color:#333;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:10px;
+        cursor:pointer;
+        font-size:22px;
+        font-weight:bold;
+    }
+
+    .hidden{
+        background:#444;
+        color:#444;
+    }
+
+    .center{
+        text-align:center;
+    }
+
+</style>
+</head>
+<body>
+
+<h1>🎮 Plataforma de Juegos Educativos</h1>
+
+<div class="menu">
+    <button onclick="showGame('quiz')">Quiz</button>
+    <button onclick="showGame('memory')">Memoria</button>
+    <button onclick="showGame('flashcards')">Flashcards</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="game active">
+    <h2>🧠 Juego de Preguntas</h2>
+
+    <div class="question" id="question"></div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="score" id="quizScore"></div>
+</div>
+
+<!-- MEMORIA -->
+<div id="memory" class="game">
+    <h2>🃏 Juego de Memoria</h2>
+
+    <div class="memory-grid" id="memoryGrid"></div>
+
+    <div class="score center" id="memoryResult"></div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="flashcards" class="game">
+    <h2>📚 Flashcards</h2>
+
+    <div class="question center" id="flashQuestion"></div>
+
+    <button onclick="showAnswer()">Mostrar Respuesta</button>
+
+    <div class="score center" id="flashAnswer"></div>
+
+    <button style="margin-top:20px;" onclick="nextFlashcard()">Siguiente</button>
+</div>
+
+<script>
+
+////////////////////////////
+// CAMBIO ENTRE JUEGOS
+////////////////////////////
+
+function showGame(id){
+    document.querySelectorAll('.game').forEach(game=>{
+        game.classList.remove('active');
+    });
+
+    document.getElementById(id).classList.add('active');
+}
+
+////////////////////////////
+// QUIZ
+////////////////////////////
+
+const quizData = [
+    {
+        question:"¿Cuál es la capital de Francia?",
+        answers:["Madrid","París","Roma","Berlín"],
+        correct:1
+    },
+    {
+        question:"¿Qué significa HTML?",
+        answers:[
+            "Hyper Text Markup Language",
+            "High Transfer Machine Language",
+            "Home Tool Markup Language",
+            "Hyper Trainer Main Language"
+        ],
+        correct:0
+    },
+    {
+        question:"¿Cuál es el planeta más grande?",
+        answers:["Tierra","Venus","Júpiter","Marte"],
+        correct:2
+    }
+];
+
+let currentQuestion = 0;
+let score = 0;
+
+function loadQuestion(){
+
+    if(currentQuestion >= quizData.length){
+        document.getElementById("question").innerHTML = "🎉 Juego terminado";
+        document.getElementById("answers").innerHTML = "";
+        document.getElementById("quizScore").innerHTML =
+            `Puntuación final: ${score}/${quizData.length}`;
+        return;
+    }
+
+    const q = quizData[currentQuestion];
+
+    document.getElementById("question").innerHTML = q.question;
+
+    const answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
+
+    q.answers.forEach((answer,index)=>{
+
+        const btn = document.createElement("button");
+        btn.innerText = answer;
+
+        btn.onclick = ()=>checkAnswer(index, btn);
+
+        answersDiv.appendChild(btn);
+    });
+}
+
+function checkAnswer(index, btn){
+
+    const correct = quizData[currentQuestion].correct;
+    const buttons = document.querySelectorAll("#answers button");
+
+    buttons.forEach(b=>b.disabled = true);
+
+    if(index === correct){
+        btn.classList.add("correct");
+        score++;
+    }else{
+        btn.classList.add("wrong");
+        buttons[correct].classList.add("correct");
+    }
+
+    setTimeout(()=>{
+        currentQuestion++;
+        loadQuestion();
+    },1200);
+}
+
+loadQuestion();
+
+////////////////////////////
+// MEMORIA
+////////////////////////////
+
+const symbols = ["🍎","🍌","🍇","🍉","🍎","🍌","🍇","🍉"];
+
+let shuffled = symbols.sort(()=>0.5 - Math.random());
+
+const memoryGrid = document.getElementById("memoryGrid");
+
+let firstCard = null;
+let secondCard = null;
+let lockBoard = false;
+let matches = 0;
+
+shuffled.forEach(symbol=>{
+
+    const card = document.createElement("div");
+
+    card.classList.add("card","hidden");
+    card.dataset.symbol = symbol;
+    card.innerHTML = symbol;
+
+    card.onclick = ()=>flipCard(card);
+
+    memoryGrid.appendChild(card);
+});
+
+function flipCard(card){
+
+    if(lockBoard) return;
+    if(!card.classList.contains("hidden")) return;
+
+    card.classList.remove("hidden");
+
+    if(!firstCard){
+        firstCard = card;
+        return;
+    }
+
+    secondCard = card;
+
+    lockBoard = true;
+
+    if(firstCard.dataset.symbol === secondCard.dataset.symbol){
+
+        matches++;
+
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+
+        if(matches === 4){
+            document.getElementById("memoryResult").innerHTML =
+                "🎉 ¡Has ganado el juego de memoria!";
+        }
+
+    }else{
+
+        setTimeout(()=>{
+
+            firstCard.classList.add("hidden");
+            secondCard.classList.add("hidden");
+
+            firstCard = null;
+            secondCard = null;
+
+            lockBoard = false;
+
+        },1000);
+    }
+}
+
+////////////////////////////
+// FLASHCARDS
+////////////////////////////
+
+const flashcards = [
+    {
+        question:"¿Qué es CSS?",
+        answer:"Es un lenguaje utilizado para dar estilos y diseño a páginas web."
+    },
+    {
+        question:"¿Qué es JavaScript?",
+        answer:"Es un lenguaje de programación para crear interactividad."
+    },
+    {
+        question:"¿Qué significa CPU?",
+        answer:"Unidad Central de Procesamiento."
+    }
+];
+
+let currentFlash = 0;
+
+function loadFlashcard(){
+
+    document.getElementById("flashQuestion").innerHTML =
+        flashcards[currentFlash].question;
+
+    document.getElementById("flashAnswer").innerHTML = "";
+}
+
+function showAnswer(){
+
+    document.getElementById("flashAnswer").innerHTML =
+        flashcards[currentFlash].answer;
+}
+
+function nextFlashcard(){
+
+    currentFlash++;
+
+    if(currentFlash >= flashcards.length){
+        currentFlash = 0;
+    }
+
+    loadFlashcard();
+}
+
+loadFlashcard();
+
+</script>
+
+</body>
+</html>
